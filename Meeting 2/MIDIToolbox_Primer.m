@@ -1,0 +1,129 @@
+%% TEST WHETHER MIDITOOLBOX PATH IS PROPERLY SET IN MATLAB
+
+% TIP 1: EXECUTE A SINGLE BLOCK OF CODE BY SELECTING IT AND PRESSING 'F9'
+% INSTEAD OF PRESSING 'F5' AND EXECUTING THE ENTIRE SCRIPT
+
+% START BY CLEARING ALL VARIABLES AND FIGURES FROM MATLAB
+clear all
+
+% RUN FOLLOWING LINE
+help miditoolbox
+
+% CHECK COMMAND WINDOW. IF HELP TEXT APPEARS, ALL IS WELL
+% (!) BUT IF YOU GET AN ERROR (!)
+% GO TO HOME -> SET PATH -> ADD FOLDER -> GO TO WHERE THE 'miditoolbox'
+% FOLDER HAS BEEN EXTRACTED -> SELECT FOLDER AND SAVE
+
+%% AUDITORY STREAMING EXPERIMENT
+
+% GENERATING TONE SEQUENCES WITH INTERLEAVING MELODIES
+
+% INITIALIZE MELODIES MANUALLY AS MIDI KEY VECTORS
+% FRERE JACQUES
+midiKeys_M1_Frere = [55 57 59 55 55 57 59 55]; 
+% THREE BLIND MICE
+midiKeys_M2_TBM = [59 57 55 55 59 57 55 55];
+
+% COMBINE VECTORS TO A SINGLE MATRIX
+mel_Combined = [midiKeys_M1_Frere; midiKeys_M2_TBM];
+
+% FORCE MATRIX TO TRANSPOSED ROW VECTOR
+mel_Combined = mel_Combined(:)';
+
+% LOOK AT mel_Combined AND SEE THAT MELODIES ARE INTERLEAVED (!)
+
+% CREATE NOTE MATRIX (COMPATIBLE WITH MIDITOOLBOX)
+mel_Combined_NMAT = createnmat(mel_Combined);
+
+% WE CAN LOOK AT PIANO ROLL REPRESENTATION
+pianoroll(mel_Combined_NMAT,'name','sec','vel');
+
+% CREATE ALTERNATING CHANNELS
+mel_Combined_NMAT(1:2:end,3) = 2;
+
+% CHECK PIANO ROLL AGAIN, THIS TIME WE WANT TIME IN BEATS
+pianoroll(mel_Combined_NMAT,'name','beat','vel'); 
+
+% THE COMBINED STREAMS CAN BE SEPARATED USING THE getmidich FUNCTION
+% GET CHANNEL WITH FRERE JACQUES
+mel_FJ = getmidich(mel_Combined_NMAT,2); 
+playsound(mel_FJ)
+
+% GET CHANNEL WITH THREE BLIND MICE
+mel_TBM = getmidich(mel_Combined_NMAT,1);
+playsound(mel_TBM)
+
+% PLAY COMBINED MATRIX AND TRY TO HEAR ONE MELODY
+playsound(mel_Combined_NMAT)
+
+% REPEAT PROCESS, BUT WITH ONE MELODY TRANSPOSED UP BY AN OCTAVE
+midiKeys_M2_TBM_octUp = midiKeys_M2_TBM - 36;
+mel_Combined_SHIFTED = [midiKeys_M1_Frere; midiKeys_M2_TBM_octUp];
+mel_Combined_SHIFTED = mel_Combined_SHIFTED(:)';
+mel_Combined_NMAT_SHIFTED = createnmat(mel_Combined_SHIFTED);
+
+% MUCH EASIER TO SEPARATE THE MELODIES
+playsound(mel_Combined_NMAT_SHIFTED)
+
+%% READING AND WRITING MIDI FILES USING TOOLBOX FUNCTIONS
+
+% TIP 2: FOR MORE INFO ABOUT A FUNCTION, ENTER IN THE COMMAND WINDOW:
+% help #functionName# 
+
+% Read MIDI FILE into a NOTE MATRIX
+% COLUMN FORMAT
+% Onset (beats) - Duration (beats) - Channel - Pitch Key - % Vel - 
+% Onset (sec)   - Duration (sec)
+nmat = readmidi('laksin.mid');
+
+% NOTE: ENSURE nmat EXISTS AND CONTAINS DATA BEFORE TRYING TO RUN ANY
+% OPERATIONS ON IT, OR YOU WILL GET AN ERROR.
+
+% WRITE A MIDI FILE - writemidi(nmat,outputFilename,<tempo>,<tpq>)
+% <tpq> CAN BE LEFT BLANK
+
+%% PLAY BACK AND VISUALIZE NOTE MATRICES
+
+% PLAY NOTE MATRICES
+playsound(nmat)
+
+% STOP PLAYBACK
+clear sound
+
+% VISUALIZE NOTE MATRIX AS PIANO ROLL
+pianoroll(nmat,'name','sec','vel');
+
+%% GETTING HOLD OF TARGETED INFORMATION FROM NOTE MATRICES
+
+% COLUMN QUICK SELECTORS - IF YOU ONLY WANT ONE ATTRIBUTE FROM THE MATRIX
+% onset, dur, channel, pitch, velocity - EG. VELOCITY
+vel = velocity(nmat);
+
+% RETURN NOTE MATRIX CONTAINING NOTES WITH ONSETS WITHIN BEAT BOUNDS
+% (CAN ALSO USE SECONDS IF NEEDED) - EG. BETWEEN BEAT 0 AND BEAT 5
+nmat_windowed = onsetwindow(nmat,0,5);
+
+%% MANIPULATING NOTE MATRICES
+
+% MANIPULATING NOTE MATRIX - MIDITOOLBOX FUNCTIONS
+
+% TEMPO
+tempo = gettempo(nmat);
+nmat_tempo2 = settempo(nmat,128);
+
+% SCALED NOTE DURATIONS (CAN ALSO BE DONE FOR PITCH, VELOCITY, ETC.)
+nmat_scaledDur = scale(nmat,'dur',0.5);
+
+% SET ALL VELOCITIES TO A VALUE - EG. 64
+nmat_velocity64 = setvalues(nmat,'vel',64);
+
+% PITCH TRANSPOSE BY x SEMITONES - EG. -4
+nmat_transposed = shift(nmat,'pitch',-4);
+
+% TRANSPOSE TO C - FINDS NOTEMATRIX KEY AND TRANSPOSES TO C MAJOR OR MINOR
+nmat_transposed_C = transpose2c(nmat);
+
+% QUANTIZE NOTE ONSET AND DURATION, FILTER OUT SHORTER
+% quantize(noteMatrix, onset_Resolution, duration_Resolution,
+% filter_Resolution)
+nmat_quantized = quantize(nmat,1/16,1/16,1/16);

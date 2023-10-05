@@ -1,0 +1,76 @@
+%% TEST WHETHER MIDITOOLBOX PATH IS PROPERLY SET IN MATLAB
+
+% TIP 1: EXECUTE A SINGLE BLOCK OF CODE BY SELECTING IT AND PRESSING 'F9'
+% INSTEAD OF PRESSING 'F5' AND EXECUTING THE ENTIRE SCRIPT
+
+% START BY CLEARING ALL VARIABLES AND FIGURES FROM MATLAB
+clear all
+
+% RUN FOLLOWING LINE
+help miditoolbox
+
+% CHECK COMMAND WINDOW. IF HELP TEXT APPEARS, ALL IS WELL
+% (!) BUT IF YOU GET AN ERROR (!)
+% GO TO HOME -> SET PATH -> ADD FOLDER -> GO TO WHERE THE 'miditoolbox'
+% FOLDER HAS BEEN EXTRACTED -> SELECT FOLDER AND SAVE
+
+
+%% READING AND WRITING MIDI FILES USING TOOLBOX FUNCTIONS
+
+% TIP 2: FOR MORE INFO ABOUT A FUNCTION, ENTER IN THE COMMAND WINDOW:
+% help #functionName# 
+
+% Read MIDI FILE into a NOTE MATRIX
+% COLUMN FORMAT
+% Onset (beats) - Duration (beats) - Channel - Pitch Key - % Vel - 
+% Onset (sec)   - Duration (sec)
+nmat = readmidi('Cymatics.mid');
+
+% PLAY NOTE MATRICES
+playsound(nmat)
+
+% STOP PLAYBACK
+clear sound
+
+% VISUALIZE NOTE MATRIX AS PIANO ROLL
+pianoroll(nmat,'name','sec','vel');
+
+% EXTRACT TEMPO
+tempo = gettempo(nmat);
+%change tempo
+nmat_tempo2 = settempo(nmat,128);
+
+% SCALED NOTE DURATIONS (CAN ALSO BE DONE FOR PITCH, VELOCITY, ETC.)
+nmat_scaledDur = scale(nmat,'dur',0.5);
+
+% QUANTIZE NOTE ONSET AND DURATION, FILTER OUT SHORTER
+% quantize(noteMatrix, onset_Resolution, duration_Resolution,
+% filter_Resolution)
+nmat_quantized = quantize(nmat,1/16,1/16,1/16);
+
+%% METER FINDING
+
+% VISUALIZE NOTE ONSET DISTRIBUTION IN TERMS OF BEAT STRUCTURE
+% onsetdist(noteMatrix, assumed_beatsPerMeasure, 'fig')
+onsetdist(nmat,4,'fig')
+
+% METER ESTIMATION - ONE METHOD IS AUTOCORRELATION
+% SEEKS PEAKS FROM ONSET STRUCTURE CORRESPONDING TO SIMPLE TUPLE OR TRIPLE
+% METER
+bestmeter = meter(nmat)
+
+% ESTIMATION MAY BE CHANGED BY INCLUSION OF MELODIC ACCENTS - BUT SCOPE
+% SOMEWHAT LIMITED TO MONOPHONIC MELODIES
+meter(nmat, 'optimal')
+
+% PLOT AUTOCORRELATION RESULTS FOR A CLOSER LOOK AT HOW THE METER IS
+% INFERRED
+onsetacorr(nmat,4,'fig')
+
+% ESTIMATE METRICAL HIERARCHY - HIGH STACKS OF DOTS = EVENTS AT A HIGHER
+% HIERARCHICAL LEVEL - THE TRIPLE PATTERN CORRESPONDING TO THE ESTIMATED 
+% METER IS VISIBLE HERE
+subplot(2,1,1)
+	pianoroll(nmat,'num','r','hold')
+subplot(2,1,2)
+plothierarchy(nmat,'beat')
